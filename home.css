@@ -149,9 +149,7 @@
 }
 
 .embed {
-    width: 350px;
-    height: 500px;
-    margin-top: var(25px);
+    margin-top: var(100px);
 }
 
 .home-section-separator1 {
