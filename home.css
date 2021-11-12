@@ -70,7 +70,7 @@
 
 .home-hero {
     width: 100%;
-    height: 756px;
+    height: 756spx;
     display: flex;
     z-index: 100;
     align-items: center;
@@ -104,10 +104,6 @@
     display: flex;
     align-items: center;
     flex-direction: column;
-}
-
-.embed {
-    margin-top: var(--dl-space-space-fiveunits);
 }
 
 .home-hero-text {
