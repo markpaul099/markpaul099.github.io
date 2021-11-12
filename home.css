@@ -70,7 +70,7 @@
 
 .home-hero {
     width: 100%;
-    height: auto;
+    height: 756px;
     display: flex;
     z-index: 100;
     align-items: center;
@@ -100,7 +100,7 @@
 
 .home-container1 {
     width: 1138px;
-    height: 400px;
+    height: 414px;
     display: flex;
     align-items: center;
     flex-direction: column;
