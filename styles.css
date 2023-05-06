@@ -46,4 +46,5 @@ button:hover {
   transition: opacity 0.5s ease-in-out;
   background-repeat: no-repeat;
   background-size: cover;
+  background-position: center;
 }
