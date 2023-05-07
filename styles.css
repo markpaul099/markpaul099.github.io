@@ -14,11 +14,6 @@ h1 {
   transition: color 0.5s; /* Adjust the duration for the font transition */
 }
 
-h1:hover {
-  color: black;
-  transition: color 0.5s; /* Adjust the duration for the font transition */
-}
-
 button {
   margin: 20px;
   padding: 10px 20px;
