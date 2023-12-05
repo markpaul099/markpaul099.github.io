@@ -1,0 +1,72 @@
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; 
+}
+
+.background {
+    background-image: url(../Images/Pampanga-background.jpg);
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+    background-color: black;
+}
+
+#title {
+    text-align: center;
+    font-size: 3em;
+    margin-top: 15px;
+    -webkit-text-stroke: 2px black;
+    text-shadow: 2px 2px 8px white;
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.container {
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px;
+    flex: 1;
+}
+
+a {
+    color: #007BFF;
+    text-decoration: none;
+}
+
+.municipality-info {
+    margin-bottom: 20px;
+}
+
+.back-button-container {
+    text-align: center;
+    margin-top: 20px;
+} 
+
+.back-button {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #007BFF;
+    color: #fff;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+
+.back-button:hover {
+    background-color: #0056b3;
+    text-decoration: none;
+}
+
+.footer {
+    text-align: center;
+    padding: 10px;
+    background-color: #333;
+    color: white;
+}
