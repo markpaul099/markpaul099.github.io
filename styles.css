@@ -16,15 +16,15 @@ body {
 }
 
 .container {
-    max-width: 1920px;
-    padding: 10px;
+    margin: 10px;
     position: relative;
 }
 
 #title {
     text-align: center;
     font-size: 3em;
-    margin-top: 15px;
+    margin-top:42px;
+    margin-bottom: 32px;
     -webkit-text-stroke: 2px black;
     text-shadow: 2px 2px 8px white;
     color: white;
@@ -45,7 +45,7 @@ table {
 th, td {
     border: 2px solid black;
     padding: 15px;
-    font-size: 1.5em;
+    font-size: 2vw;
     text-align: center;
 }
 
@@ -57,7 +57,7 @@ th {
 #municipality {
     text-decoration-line: none;
     color: #004bbb;
-    font-weight: bolder;
+    font-weight: bolder;    
 }
 
 .footer {
@@ -66,4 +66,10 @@ th {
     padding: 20px;
     background-color: #333;
     color: white;
+}
+
+p {
+    font-size: 18px;
+    font-family: Arial, Helvetica, sans-serif;
+    line-height: 1.8;
 }
