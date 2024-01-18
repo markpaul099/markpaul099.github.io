@@ -41,17 +41,20 @@ a:visited{
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.navbtn {
-    border: 1px solid black;
-    border-radius: 10px;
-    width: 150px;
-    background-color: rgba(0,123,255, 0.9);
+#navbtn {
+    margin-left: 10px;
+    margin-right: 10px;
     color: white;
     text-align: center;
     align-self: center;
-    padding-top: 20px;
-    padding-bottom: 20px;
     font-size: 18px;
+}
+
+#nav-txt-btn {
+    border: 1px solid black;
+    border-radius: 10px;
+    background-color: rgba(0,123,255, 0.9);
+    padding: 20px;
 }
 
 .navbtn:hover {
