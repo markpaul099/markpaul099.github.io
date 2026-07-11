@@ -32,8 +32,6 @@ const tertiarySchools = [
     { name: "Pampanga Colleges", est: 1937 }
 ];
 
-const skillsList = ["Auto Mechanic", "Beautician", "Carpentry Work", "Computer Literate", "Domestic Chores", "Driver", "Electrician", "Embroidery", "Gardening", "Masonry", "Painter/Artist", "Photography", "Plumbing", "Sewing Dresses", "Tailoring"];
-
 // Load external datasets (male-names.json, female-names.json, middle-last-names.json, sitio.json)
 async function loadDatasets() {
     try {
@@ -98,7 +96,7 @@ function generateSingleProfile() {
     const suffix = isMale ? randomItem(suffixes) : "";
 
     // ===== TEMPORAL LOGIC: Base Year 2026 =====
-    const age = randomInt(18, 35);
+    const age = randomInt(18, 50);
     const dobYear = BASE_YEAR - age;
     const dobMonth = randomInt(1, 12);
     const dobDay = randomInt(1, 28);
@@ -131,6 +129,9 @@ function generateSingleProfile() {
     const hsGradYear = isK12 ? elemGradYear + 6 : elemGradYear + 4; // K-12: 6 years (4 HS + 2 SHS), Pre-K12: 4 years
     const collegeGradYear = hsGradYear + 4; // College always 4 years
 
+    const elementaryCompleted = age >= 12 && Math.random() > 0.25;
+    const secondaryCompleted = age >= 18 && Math.random() > 0.3;
+
     const elemSchool = randomItem(elementarySchools);
     const hsSchool = randomItem(secondarySchools);
     const collegeSchool = randomItem(tertiarySchools);
@@ -140,12 +141,26 @@ function generateSingleProfile() {
     const currentlyInSchool = (age <= 23 && Math.random() > 0.4) ? "Yes" : "No";
     let collegeStatusText = "";
 
-    if (currentlyInSchool === "Yes") {
-        collegeStatusText = `Undergraduate (Currently attending 3rd Year)`;
-    } else if (age < (isK12 ? 22 : 20)) {
-        collegeStatusText = `Undergraduate (Level Reached: 2nd Year)`;
-    } else {
-        collegeStatusText = `Graduated (${collegeGradYear})`;
+    const elemStatusText = age < 12
+        ? "In Progress"
+        : elementaryCompleted
+            ? `Completed (${elemGradYear})`
+            : "Not Finished";
+
+    const hsStatusText = age < 18
+        ? "In Progress"
+        : secondaryCompleted
+            ? `Completed (${hsGradYear})`
+            : "Not Finished";
+
+    if (age <= 30) {
+        if (currentlyInSchool === "Yes") {
+            collegeStatusText = `Undergraduate (Currently attending 3rd Year)`;
+        } else if (age < (isK12 ? 22 : 20)) {
+            collegeStatusText = `Undergraduate (Level Reached: 2nd Year)`;
+        } else {
+            collegeStatusText = `Graduated (${collegeGradYear})`;
+        }
     }
 
     const hsTypeText = isK12 ? `Secondary (K-12) - Strand: ${strand}` : `Secondary (Non-K12)`;
@@ -153,40 +168,18 @@ function generateSingleProfile() {
     // Formatting HTML Outputs for Education
     const elemHTML = `
         ${elemSchool.name} 
-        <span class="school-info">Est. ${elemSchool.est} | Graduated: ${elemGradYear}</span>
+        <span class="school-info">Est. ${elemSchool.est} | Status: ${elemStatusText}</span>
     `;
     const hsHTML = `
         ${hsSchool.name} <br>
         <span style="font-size:13px;">${hsTypeText}</span>
-        <span class="school-info">Est. ${hsSchool.est} | Graduated: ${hsGradYear}</span>
+        <span class="school-info">Est. ${hsSchool.est} | Status: ${hsStatusText}</span>
     `;
-    const collegeHTML = `
+    const collegeHTML = age > 30 ? "" : `
         ${collegeSchool.name} <br>
         <span style="font-size:13px;">Course: ${course}</span>
         <span class="school-info">Est. ${collegeSchool.est} | Status: ${collegeStatusText}</span>
     `;
-
-    // Skills
-    const numSkills = randomInt(1, 4);
-    let skills = [];
-    while (skills.length < numSkills) {
-        let s = randomItem(skillsList);
-        if (!skills.includes(s)) skills.push(s);
-    }
-
-    // Eligibility / License
-    const isGraduated = collegeStatusText.includes("Graduated");
-    let eligibility = "None";
-    let prc = "N/A";
-
-    if (isGraduated) {
-        if (Math.random() > 0.6) {
-            prc = randomItem(["Licensed Teacher", "CPA", "Registered Nurse"]);
-            eligibility = "RA 1080 (Board Passer)";
-        } else if (Math.random() > 0.5) {
-            eligibility = "Civil Service Professional";
-        }
-    }
 
     // Return profile object
     return {
@@ -213,27 +206,22 @@ function generateSingleProfile() {
             elementary: {
                 school: elemSchool.name,
                 est: elemSchool.est,
-                graduated: elemGradYear
+                status: elemStatusText
             },
             secondary: {
                 school: hsSchool.name,
                 est: hsSchool.est,
-                graduated: hsGradYear,
+                status: hsStatusText,
                 type: hsTypeText,
                 strand: strand
             },
-            tertiary: {
+            tertiary: age > 30 ? null : {
                 school: collegeSchool.name,
                 est: collegeSchool.est,
                 course: course,
                 status: collegeStatusText
             }
-        },
-        credentials: {
-            eligibility: eligibility,
-            prc: prc
-        },
-        skills: skills
+        }
     };
 }
 
@@ -241,7 +229,6 @@ function displayProfile(profile) {
     const p = profile.personal;
     const e = profile.employment;
     const ed = profile.education;
-    const c = profile.credentials;
 
     document.getElementById('val-surname').innerText = p.surname;
     document.getElementById('val-firstname').innerText = p.firstName;
@@ -262,21 +249,25 @@ function displayProfile(profile) {
     document.getElementById('val-inschool').innerText = ed.currentlyInSchool;
     document.getElementById('val-elem').innerHTML = `
         ${ed.elementary.school}
-        <span class="school-info">Est. ${ed.elementary.est} | Graduated: ${ed.elementary.graduated}</span>
+        <span class="school-info">Est. ${ed.elementary.est} | Status: ${ed.elementary.status}</span>
     `;
     document.getElementById('val-hs').innerHTML = `
         ${ed.secondary.school} <br>
         <span style="font-size:13px;">${ed.secondary.type}</span>
-        <span class="school-info">Est. ${ed.secondary.est} | Graduated: ${ed.secondary.graduated}</span>
+        <span class="school-info">Est. ${ed.secondary.est} | Status: ${ed.secondary.status}</span>
     `;
-    document.getElementById('val-college').innerHTML = `
-        ${ed.tertiary.school} <br>
-        <span style="font-size:13px;">Course: ${ed.tertiary.course}</span>
-        <span class="school-info">Est. ${ed.tertiary.est} | Status: ${ed.tertiary.status}</span>
-    `;
-    document.getElementById('val-skills').innerText = profile.skills.join(", ");
-    document.getElementById('val-eligibility').innerText = c.eligibility;
-    document.getElementById('val-prc').innerText = c.prc;
+    const collegeField = document.getElementById('val-college').closest('.field');
+    if (ed.tertiary) {
+        collegeField.style.display = '';
+        document.getElementById('val-college').innerHTML = `
+            ${ed.tertiary.school} <br>
+            <span style="font-size:13px;">Course: ${ed.tertiary.course}</span>
+            <span class="school-info">Est. ${ed.tertiary.est} | Status: ${ed.tertiary.status}</span>
+        `;
+    } else {
+        collegeField.style.display = 'none';
+        document.getElementById('val-college').innerHTML = '';
+    }
 }
 
 
