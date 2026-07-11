@@ -165,7 +165,6 @@ function generateSingleProfile() {
     const height = `${randomInt(4, 5)}'${randomInt(2, 11)}"`;
     const contact = `09${randomInt(100000000, 999999999)}`;
     const civilStatus = age > 24 ? randomItem(["Single", "Married"]) : "Single";
-    const is4Ps = Math.random() > 1 ? `Yes (ID: ${randomInt(100000, 999999)})` : "No";
 
     // ===== EMPLOYMENT & LOGICAL UNEMPLOYMENT REASONS =====
     const empStatus = Math.random() > 0.4 ? "Unemployed" : "Employed";
@@ -422,7 +421,6 @@ function displayProfile(profile) {
         setText('val-contact', p.contact);
         setText('val-emp-status', e.status);
         setText('val-unemp-reason', e.reason);
-        setText('val-4ps', Math.random() > 0.8 ? `Yes (ID: ${randomInt(100000, 999999)})` : "No");
 
         setText('val-inschool', ed.currentlyInSchool);
 
