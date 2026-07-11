@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Photo Framer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>ITE Fest Frame</h1>
+            
+            <div class="canvas-container">
+                <canvas id="photoCanvas"></canvas>
+            </div>
+            
+            <div class="controls">
+                <label for="photoUpload" class="upload-btn">
+                    Upload Photo
+                    <input type="file" id="photoUpload" accept="image/*" hidden>
+                </label>
+                
+                <div class="zoom-control">
+                    <label for="zoomSlider">Zoom:</label>
+                    <input type="range" id="zoomSlider" min="50" max="200" value="100" disabled>
+                    <span id="zoomValue">100%</span>
+                </div>
+                
+                <button id="downloadBtn" class="download-btn" disabled>Download Photo</button>
+            </div>
+            
+            <p class="instructions">Drag the photo to position it within the frame</p>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
