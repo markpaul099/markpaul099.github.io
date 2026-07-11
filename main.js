@@ -5,7 +5,7 @@ let lastNames = [];
 const suffixes = ["", "", "", "", "", "Jr.", "III"];
 
 // Address & Demographics
-const religions = ["Roman Catholic", "Iglesia ni Cristo", "Born Again Christian", "Aglipayan"];
+const religions = ["Roman Catholic", "Iglesia ni Cristo", "Born Again Christian", "Dating Daan", "Jehovah's Witness"];
 
 // STRICT LOCATION CONSTRAINTS: Sulipan, Apalit, Pampanga
 // `sitio.json` will populate `streets` if available; fallback list kept
