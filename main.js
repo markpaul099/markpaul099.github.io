@@ -20,16 +20,25 @@ const strands = ["STEM", "ABM", "HUMSS", "TVL - ICT", "GAS"];
 
 const elementarySchools = [
     { name: "Sulipan Elementary School", est: 1945 },
-    { name: "San Vicente Elementary School", est: 1950 }
+    { name: "San Vicente Elementary School", est: 1950 },
+    { name: "AMA Basic Education of Apalit", est: 2010 },
+    { name: "La Verdad Christian College", est: 2009 },
+    { name: "Dominican School of Apalit", est: 1997 },
 ];
 const secondarySchools = [
     { name: "Apalit High School", est: 2016 },
-    { name: "Saint Vincent's Academy of Apalit", est: 1985 }
-];
+    { name: "Saint Vincent's Academy of Apalit", est: 1985 },
+    { name: "AMA Basic Education of Apalit", est: 2010 },
+    { name: "Senior High School in Apalit", est: 2016 },
+    { name: "ATEC Technological College Apalit", est: 2019 },
+    { name: "La Verdad Christian College", est: 2009 }
+];  
 const tertiarySchools = [
     { name: "DHVSU", est: 1961 },
-    { name: "BSU", est: 1993 },
-    { name: "Pampanga Colleges", est: 1937 }
+    { name: "BULSU", est: 1993 },
+    { name: "Pampanga Colleges", est: 1937 },
+    { name: "ACLC College of Apalit", est: 2010 },
+    { name: "La Verdad Christian College", est: 2009 }
 ];
 
 // Load external datasets (male-names.json, female-names.json, middle-last-names.json, sitio.json)
