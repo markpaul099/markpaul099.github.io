@@ -138,7 +138,8 @@ function generateSingleProfile() {
     const collegeGradYear = hsGradYear + 4; // College always 4 years
 
     // Elementary must be completed before secondary; secondary must be completed before tertiary
-    let elementaryCompleted = age >= 12 && Math.random() > 0.25;
+    // reduce completion probability so "Not Finished" occurs more often
+    let elementaryCompleted = age >= 12 && Math.random() > 0.6;
     let secondaryCompleted = false;
 
     // Choose schools only from those established early enough for the person's timeline
@@ -156,12 +157,14 @@ function generateSingleProfile() {
         // Secondary attendance ends at hsGradYear
         hsSchool = selectEligibleSchool(secondarySchools, hsGradYear);
         if (hsSchool) {
-            secondaryCompleted = age >= 18 && Math.random() > 0.3;
+            // only some who finished elementary proceed to finish secondary
+            secondaryCompleted = age >= 18 && Math.random() > 0.5;
         } else {
             // no eligible secondary school available
             secondaryCompleted = false;
         }
     }
+
 
     // Tertiary school selection — only if secondary was completed and person is within reasonable age
     let collegeSchool = null;
@@ -259,6 +262,9 @@ function generateSingleProfile() {
         collegeStatusText = "Not Applicable";
     }
 
+    // do not coerce missing schools into objects here — keep null so returned
+    // `education.secondary` remains null when elementary is incomplete.
+
     const hsTypeText = isK12 ? `Secondary (K-12) - Strand: ${strand}` : `Secondary (Non-K12)`;
 
     // Formatting HTML Outputs for Education
@@ -266,11 +272,11 @@ function generateSingleProfile() {
         ${elemSchool.name} 
         <span class="school-info">Est. ${elemSchool.est} | Status: ${elemStatusText}</span>
     `;
-    const hsHTML = `
+    const hsHTML = hsSchool ? `
         ${hsSchool.name} <br>
         <span style="font-size:13px;">${hsTypeText}</span>
         <span class="school-info">Est. ${hsSchool.est} | Status: ${hsStatusText}</span>
-    `;
+    ` : '';
     const collegeHTML = (age > 35 || !collegeSchool) ? "" : `
         ${collegeSchool.name} <br>
         <span style="font-size:13px;">Course: ${course}</span>
@@ -325,62 +331,84 @@ function generateSingleProfile() {
 }
 
 function displayProfile(profile) {
-    const p = profile.personal;
-    const e = profile.employment;
-    const ed = profile.education;
+    try {
+        const p = profile.personal;
+        const e = profile.employment;
+        const ed = profile.education;
 
-    document.getElementById('val-surname').innerText = p.surname;
-    document.getElementById('val-firstname').innerText = p.firstName;
-    document.getElementById('val-middlename').innerText = p.middleName;
-    document.getElementById('val-suffix').innerText = p.suffix;
-    document.getElementById('val-dob').innerText = p.dob;
-    document.getElementById('val-age').innerText = p.age;
-    document.getElementById('val-sex').innerText = p.sex;
-    document.getElementById('val-religion').innerText = p.religion;
-    document.getElementById('val-civil').innerText = p.civilStatus;
-    document.getElementById('val-address').innerText = p.address;
-    document.getElementById('val-height').innerText = p.height;
-    document.getElementById('val-contact').innerText = p.contact;
-    document.getElementById('val-emp-status').innerText = e.status;
-    document.getElementById('val-unemp-reason').innerText = e.reason;
-    document.getElementById('val-4ps').innerText = Math.random() > 0.8 ? `Yes (ID: ${randomInt(100000, 999999)})` : "No";
+        const setText = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text;
+        };
+        const setHTML = (id, html) => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = html;
+        };
 
-    document.getElementById('val-inschool').innerText = ed.currentlyInSchool;
-    document.getElementById('val-elem').innerHTML = `
-        ${ed.elementary.school}
-        <span class="school-info">Est. ${ed.elementary.est || 'N/A'} | Status: ${ed.elementary.status}${ed.elementary.lastAttended ? ` | Last Attended: ${ed.elementary.lastAttended}` : ''}</span>
-    `;
-    const hsField = document.getElementById('val-hs').closest('.field');
-    if (ed.secondary) {
-        hsField.style.display = '';
-        document.getElementById('val-hs').innerHTML = `
-            ${ed.secondary.school} <br>
-            <span style="font-size:13px;">${ed.secondary.type}</span>
-            <span class="school-info">Est. ${ed.secondary.est} | Status: ${ed.secondary.status}${ed.secondary.lastAttended ? ` | Last Attended: ${ed.secondary.lastAttended}` : ''}</span>
-        `;
-    } else {
-        hsField.style.display = 'none';
-        document.getElementById('val-hs').innerHTML = '';
-    }
-    const collegeField = document.getElementById('val-college').closest('.field');
-    if (ed.tertiary) {
-        collegeField.style.display = '';
-        document.getElementById('val-college').innerHTML = `
-            ${ed.tertiary.school} <br>
-            <span style="font-size:13px;">Course: ${ed.tertiary.course}</span>
-            <span class="school-info">Est. ${ed.tertiary.est} | Status: ${ed.tertiary.status}${ed.tertiary.lastAttended ? ` | Last Attended: ${ed.tertiary.lastAttended}` : ''}</span>
-        `;
-    } else {
-        collegeField.style.display = 'none';
-        document.getElementById('val-college').innerHTML = '';
+        setText('val-surname', p.surname);
+        setText('val-firstname', p.firstName);
+        setText('val-middlename', p.middleName);
+        setText('val-suffix', p.suffix);
+        setText('val-dob', p.dob);
+        setText('val-age', p.age);
+        setText('val-sex', p.sex);
+        setText('val-religion', p.religion);
+        setText('val-civil', p.civilStatus);
+        setText('val-address', p.address);
+        setText('val-height', p.height);
+        setText('val-contact', p.contact);
+        setText('val-emp-status', e.status);
+        setText('val-unemp-reason', e.reason);
+        setText('val-4ps', Math.random() > 0.8 ? `Yes (ID: ${randomInt(100000, 999999)})` : "No");
+
+        setText('val-inschool', ed.currentlyInSchool);
+
+        setHTML('val-elem', `
+            ${ed.elementary.school}
+            <span class="school-info">Est. ${ed.elementary.est || 'N/A'} | Status: ${ed.elementary.status}${ed.elementary.lastAttended ? ` | Last Attended: ${ed.elementary.lastAttended}` : ''}</span>
+        `);
+
+        const hsEl = document.getElementById('val-hs');
+        const hsField = hsEl ? hsEl.closest('.field') : null;
+        if (ed.secondary && hsEl && hsField) {
+            hsField.style.display = '';
+            hsEl.innerHTML = `
+                ${ed.secondary.school} <br>
+                <span style="font-size:13px;">${ed.secondary.type}</span>
+                <span class="school-info">Est. ${ed.secondary.est} | Status: ${ed.secondary.status}${ed.secondary.lastAttended ? ` | Last Attended: ${ed.secondary.lastAttended}` : ''}</span>
+            `;
+        } else if (hsField) {
+            hsField.style.display = 'none';
+            if (hsEl) hsEl.innerHTML = '';
+        }
+
+        const collegeEl = document.getElementById('val-college');
+        const collegeField = collegeEl ? collegeEl.closest('.field') : null;
+        if (ed.tertiary && collegeEl && collegeField) {
+            collegeField.style.display = '';
+            collegeEl.innerHTML = `
+                ${ed.tertiary.school} <br>
+                <span style="font-size:13px;">Course: ${ed.tertiary.course}</span>
+                <span class="school-info">Est. ${ed.tertiary.est} | Status: ${ed.tertiary.status}${ed.tertiary.lastAttended ? ` | Last Attended: ${ed.tertiary.lastAttended}` : ''}</span>
+            `;
+        } else if (collegeField) {
+            collegeField.style.display = 'none';
+            if (collegeEl) collegeEl.innerHTML = '';
+        }
+    } catch (err) {
+        console.error('displayProfile error', err);
     }
 }
 
 
 // Simple generator trigger for single profile
 function generateAndDisplay() {
-    const profile = generateSingleProfile();
-    displayProfile(profile);
+    try {
+        const profile = generateSingleProfile();
+        displayProfile(profile);
+    } catch (err) {
+        console.error('generateAndDisplay error', err);
+    }
 }
 
 // Auto-generate first profile on load (ensure datasets are loaded first)
