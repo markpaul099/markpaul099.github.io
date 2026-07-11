@@ -8,7 +8,7 @@ const suffixes = ["", "", "", "", "", "Jr.", "III"];
 const religions = ["Roman Catholic", "Iglesia ni Cristo", "Born Again Christian", "Dating Daan", "Jehovah's Witness"];
 
 // STRICT LOCATION CONSTRAINTS: Sulipan, Apalit, Pampanga
-// `sitio.json` will populate `streets` if available; fallback list kept
+// `sitio.json` will populate `streets` if available
 let streets = ["Barrio Proper", "Control", "Pulong Kawayan", "Dalang Baka", "Riverside", "Caldera"];
 const barangay = "Sulipan";
 const municipality = "Apalit";
@@ -22,8 +22,7 @@ const elementarySchools = [
     { name: "Sulipan Elementary School", est: 1945 },
     { name: "San Vicente Elementary School", est: 1950 },
     { name: "AMA Basic Education of Apalit", est: 2010 },
-    { name: "La Verdad Christian College", est: 2009 },
-    { name: "Dominican School of Apalit", est: 1997 },
+    { name: "La Verdad Christian College", est: 2009 }
 ];
 const secondarySchools = [
     { name: "Apalit High School", est: 2016 },
@@ -64,17 +63,12 @@ async function loadDatasets() {
             });
         }
 
-        // Fallbacks if any list is empty
-        if (!maleNames || maleNames.length === 0) maleNames = ["Juan", "Pedro", "Miguel"];
-        if (!femaleNames || femaleNames.length === 0) femaleNames = ["Maria", "Ana", "Lourdes"];
-        if (!lastNames || lastNames.length === 0) lastNames = ["Dela Cruz", "Santos", "Garcia"];
     } catch (err) {
-        console.warn('Failed to load external datasets, using built-ins', err);
-        if (!maleNames.length) maleNames = ["Juan", "Pedro", "Miguel"];
-        if (!femaleNames.length) femaleNames = ["Maria", "Ana", "Lourdes"];
-        if (!lastNames.length) lastNames = ["Dela Cruz", "Santos", "Garcia"];
+        console.error('Failed to load external datasets', err);
     }
 }
+
+const datasetsReady = loadDatasets();
 
 // BASE YEAR: 2026 for all calculations
 const BASE_YEAR = 2026;
@@ -463,8 +457,9 @@ function displayProfile(profile) {
 
 
 // Simple generator trigger for single profile
-function generateAndDisplay() {
+async function generateAndDisplay() {
     try {
+        await datasetsReady;
         const profile = generateSingleProfile();
         displayProfile(profile);
     } catch (err) {
@@ -474,7 +469,7 @@ function generateAndDisplay() {
 
 // Auto-generate first profile on load (ensure datasets are loaded first)
 window.onload = async () => {
-    await loadDatasets();
+    await datasetsReady;
     const profile = generateSingleProfile();
     displayProfile(profile);
 };
