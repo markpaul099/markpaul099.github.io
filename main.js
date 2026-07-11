@@ -83,6 +83,14 @@ const unemploymentReasons = {
 function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function randomItem(arr) { return arr[randomInt(0, arr.length - 1)]; }
 
+// Select a school whose establishment year makes it possible for a person
+// with a given graduation year to have attended it. Returns null if none.
+function selectEligibleSchool(schools, latestAllowedYear) {
+    const eligible = schools.filter(s => s.est && s.est <= latestAllowedYear);
+    if (eligible.length === 0) return null;
+    return randomItem(eligible);
+}
+
 /**
  * CORE SINGLE PROFILE GENERATION
  * Returns a single profile object with all fields
@@ -129,17 +137,59 @@ function generateSingleProfile() {
     const hsGradYear = isK12 ? elemGradYear + 6 : elemGradYear + 4; // K-12: 6 years (4 HS + 2 SHS), Pre-K12: 4 years
     const collegeGradYear = hsGradYear + 4; // College always 4 years
 
-    const elementaryCompleted = age >= 12 && Math.random() > 0.25;
-    const secondaryCompleted = age >= 18 && Math.random() > 0.3;
+    // Elementary must be completed before secondary; secondary must be completed before tertiary
+    let elementaryCompleted = age >= 12 && Math.random() > 0.25;
+    let secondaryCompleted = false;
 
-    const elemSchool = randomItem(elementarySchools);
-    const hsSchool = randomItem(secondarySchools);
-    const collegeSchool = randomItem(tertiarySchools);
+    // Choose schools only from those established early enough for the person's timeline
+    // Elementary attendance ends at elemGradYear
+    let elemSchool = selectEligibleSchool(elementarySchools, elemGradYear);
+    if (!elemSchool) {
+        // no eligible elementary school — cannot have completed elementary at a listed school
+        elemSchool = { name: "N/A", est: null };
+        elementaryCompleted = false;
+    }
+
+    // Secondary only possible if elementary completed
+    let hsSchool = null;
+    if (elementaryCompleted) {
+        // Secondary attendance ends at hsGradYear
+        hsSchool = selectEligibleSchool(secondarySchools, hsGradYear);
+        if (hsSchool) {
+            secondaryCompleted = age >= 18 && Math.random() > 0.3;
+        } else {
+            // no eligible secondary school available
+            secondaryCompleted = false;
+        }
+    }
+
+    // Tertiary school selection — only if secondary was completed and person is within reasonable age
+    let collegeSchool = null;
     const course = randomItem(courses);
     const strand = isK12 ? randomItem(strands) : "N/A";
 
-    const currentlyInSchool = (age <= 23 && Math.random() > 0.4) ? "Yes" : "No";
+    // currentlyInSchool should be plausible given progression
+    let currentlyInSchool = "No";
+    if (age < 12) {
+        currentlyInSchool = "Yes"; // likely still in elementary
+    } else if (age < 18) {
+        // in secondary only if elementary was completed
+        currentlyInSchool = elementaryCompleted && Math.random() > 0.4 ? "Yes" : "No";
+    } else {
+        // college-age: only if secondary was completed
+        currentlyInSchool = secondaryCompleted && age <= 23 && Math.random() > 0.4 ? "Yes" : "No";
+    }
+
     let collegeStatusText = "";
+    let collegeLastAttended = null;
+
+    // compute plausible attendance windows
+    const elemStartYear = dobYear + 6; // typical school starting age 6
+    const elemEndYear = elemGradYear; // dob + 12
+    const hsStartYear = elemEndYear; // high school starts same year elementary ends
+    const hsEndYear = hsGradYear;
+    const collegeStartYear = hsEndYear; // college starts same year HS ends
+    const collegeEndYear = collegeGradYear;
 
     const elemStatusText = age < 12
         ? "In Progress"
@@ -147,20 +197,66 @@ function generateSingleProfile() {
             ? `Completed (${elemGradYear})`
             : "Not Finished";
 
-    const hsStatusText = age < 18
-        ? "In Progress"
-        : secondaryCompleted
-            ? `Completed (${hsGradYear})`
-            : "Not Finished";
+    // last attended years for incomplete/partial attendance
+    let elemLastAttended = null;
+    if (elemStatusText === "In Progress") {
+        elemLastAttended = Math.min(BASE_YEAR, dobYear + age);
+    } else if (!elementaryCompleted) {
+        const maxYear = Math.min(elemEndYear, BASE_YEAR);
+        const minYear = Math.max(elemStartYear, dobYear + 1);
+        if (minYear <= maxYear) elemLastAttended = randomInt(minYear, maxYear);
+    } else {
+        elemLastAttended = elemEndYear;
+    }
 
-    if (age <= 30) {
-        if (currentlyInSchool === "Yes") {
-            collegeStatusText = `Undergraduate (Currently attending 3rd Year)`;
-        } else if (age < (isK12 ? 22 : 20)) {
-            collegeStatusText = `Undergraduate (Level Reached: 2nd Year)`;
+    const hsStatusText = !elementaryCompleted
+        ? "Not Started"
+        : (age < 18
+            ? "In Progress"
+            : (secondaryCompleted
+                ? `Completed (${hsGradYear})`
+                : "Not Finished"));
+
+    let hsLastAttended = null;
+    if (!elementaryCompleted) {
+        hsLastAttended = null;
+    } else if (hsStatusText === "In Progress") {
+        hsLastAttended = Math.min(BASE_YEAR, dobYear + age);
+    } else if (!secondaryCompleted) {
+        const maxYear = Math.min(hsEndYear, BASE_YEAR);
+        const minYear = hsStartYear;
+        if (minYear <= maxYear) hsLastAttended = randomInt(minYear, maxYear);
+    } else {
+        hsLastAttended = hsEndYear;
+    }
+
+    if (secondaryCompleted) {
+        // attempt to pick a college that was already established by the time the person could attend
+        collegeSchool = selectEligibleSchool(tertiarySchools, collegeGradYear);
+        if (!collegeSchool) {
+            // no eligible tertiary school
+            collegeSchool = null;
+            collegeStatusText = "Not Applicable";
         } else {
-            collegeStatusText = `Graduated (${collegeGradYear})`;
+            if (age <= 30) {
+                if (currentlyInSchool === "Yes") {
+                    collegeStatusText = `Undergraduate (Currently attending 3rd Year)`;
+                    // last attended should be between college start and current year
+                    const maxCA = Math.min(BASE_YEAR, collegeEndYear);
+                    const minCA = Math.max(collegeStartYear, collegeStartYear);
+                    if (minCA <= maxCA) collegeLastAttended = randomInt(minCA, maxCA);
+                } else if (age < (isK12 ? 22 : 20)) {
+                    collegeStatusText = `Undergraduate (Level Reached: 2nd Year)`;
+                    const maxCA = Math.min(BASE_YEAR, collegeEndYear);
+                    const minCA = Math.max(collegeStartYear, collegeStartYear);
+                    if (minCA <= maxCA) collegeLastAttended = randomInt(minCA, maxCA);
+                } else {
+                    collegeStatusText = `Graduated (${collegeGradYear})`;
+                }
+            }
         }
+    } else {
+        collegeStatusText = "Not Applicable";
     }
 
     const hsTypeText = isK12 ? `Secondary (K-12) - Strand: ${strand}` : `Secondary (Non-K12)`;
@@ -175,10 +271,10 @@ function generateSingleProfile() {
         <span style="font-size:13px;">${hsTypeText}</span>
         <span class="school-info">Est. ${hsSchool.est} | Status: ${hsStatusText}</span>
     `;
-    const collegeHTML = age > 30 ? "" : `
+    const collegeHTML = (age > 35 || !collegeSchool) ? "" : `
         ${collegeSchool.name} <br>
         <span style="font-size:13px;">Course: ${course}</span>
-        <span class="school-info">Est. ${collegeSchool.est} | Status: ${collegeStatusText}</span>
+        <span class="school-info">Est. ${collegeSchool.est} | Status: ${collegeStatusText}${collegeLastAttended ? ` | Last Attended: ${collegeLastAttended}` : ''}</span>
     `;
 
     // Return profile object
@@ -206,20 +302,23 @@ function generateSingleProfile() {
             elementary: {
                 school: elemSchool.name,
                 est: elemSchool.est,
-                status: elemStatusText
+                status: elemStatusText,
+                lastAttended: elemLastAttended
             },
-            secondary: {
+            secondary: hsSchool ? {
                 school: hsSchool.name,
                 est: hsSchool.est,
                 status: hsStatusText,
                 type: hsTypeText,
-                strand: strand
-            },
-            tertiary: age > 30 ? null : {
+                strand: strand,
+                lastAttended: hsLastAttended
+            } : null,
+            tertiary: (age > 30 || !secondaryCompleted || !collegeSchool) ? null : {
                 school: collegeSchool.name,
                 est: collegeSchool.est,
                 course: course,
-                status: collegeStatusText
+                status: collegeStatusText,
+                lastAttended: collegeLastAttended || null
             }
         }
     };
@@ -249,20 +348,27 @@ function displayProfile(profile) {
     document.getElementById('val-inschool').innerText = ed.currentlyInSchool;
     document.getElementById('val-elem').innerHTML = `
         ${ed.elementary.school}
-        <span class="school-info">Est. ${ed.elementary.est} | Status: ${ed.elementary.status}</span>
+        <span class="school-info">Est. ${ed.elementary.est || 'N/A'} | Status: ${ed.elementary.status}${ed.elementary.lastAttended ? ` | Last Attended: ${ed.elementary.lastAttended}` : ''}</span>
     `;
-    document.getElementById('val-hs').innerHTML = `
-        ${ed.secondary.school} <br>
-        <span style="font-size:13px;">${ed.secondary.type}</span>
-        <span class="school-info">Est. ${ed.secondary.est} | Status: ${ed.secondary.status}</span>
-    `;
+    const hsField = document.getElementById('val-hs').closest('.field');
+    if (ed.secondary) {
+        hsField.style.display = '';
+        document.getElementById('val-hs').innerHTML = `
+            ${ed.secondary.school} <br>
+            <span style="font-size:13px;">${ed.secondary.type}</span>
+            <span class="school-info">Est. ${ed.secondary.est} | Status: ${ed.secondary.status}${ed.secondary.lastAttended ? ` | Last Attended: ${ed.secondary.lastAttended}` : ''}</span>
+        `;
+    } else {
+        hsField.style.display = 'none';
+        document.getElementById('val-hs').innerHTML = '';
+    }
     const collegeField = document.getElementById('val-college').closest('.field');
     if (ed.tertiary) {
         collegeField.style.display = '';
         document.getElementById('val-college').innerHTML = `
             ${ed.tertiary.school} <br>
             <span style="font-size:13px;">Course: ${ed.tertiary.course}</span>
-            <span class="school-info">Est. ${ed.tertiary.est} | Status: ${ed.tertiary.status}</span>
+            <span class="school-info">Est. ${ed.tertiary.est} | Status: ${ed.tertiary.status}${ed.tertiary.lastAttended ? ` | Last Attended: ${ed.tertiary.lastAttended}` : ''}</span>
         `;
     } else {
         collegeField.style.display = 'none';
