@@ -36,7 +36,6 @@ const secondarySchools = [
 const tertiarySchools = [
     { name: "DHVSU", est: 1961 },
     { name: "BULSU", est: 1993 },
-    { name: "Pampanga Colleges", est: 1937 },
     { name: "ACLC College of Apalit", est: 2010 },
     { name: "La Verdad Christian College", est: 2009 }
 ];
@@ -79,6 +78,10 @@ async function loadDatasets() {
 
 // BASE YEAR: 2026 for all calculations
 const BASE_YEAR = 2026;
+const MIN_ELEMENTARY_START_AGE = 6;
+const MIN_SECONDARY_START_AGE = 12;
+const MIN_COLLEGE_START_AGE = 16;
+const COLLEGE_APPEARANCE_CHANCE = 0.25;
 
 // Unemployment Reason Mapping based on Age & Education
 const unemploymentReasons = {
@@ -91,6 +94,44 @@ const unemploymentReasons = {
 // Utilities
 function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function randomItem(arr) { return arr[randomInt(0, arr.length - 1)]; }
+
+function ordinal(n) {
+    if (n === 1) return '1st';
+    if (n === 2) return '2nd';
+    if (n === 3) return '3rd';
+    return `${n}th`;
+}
+
+function clampNumber(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
+
+function formatStatusWithLevel(baseStatus, levelReached) {
+    return levelReached ? `${baseStatus} (Level Reached: ${levelReached})` : baseStatus;
+}
+
+function getElementaryLevelReached(startYear, lastAttendedYear) {
+    if (!startYear || !lastAttendedYear || lastAttendedYear < startYear) return null;
+    const grade = clampNumber(lastAttendedYear - startYear + 1, 1, 6);
+    return `Grade ${grade}`;
+}
+
+function getSecondaryLevelReached(startYear, lastAttendedYear, isK12) {
+    if (!startYear || !lastAttendedYear || lastAttendedYear < startYear) return null;
+    if (isK12) {
+        const grade = clampNumber(lastAttendedYear - startYear + 7, 7, 12);
+        return `Grade ${grade}`;
+    }
+
+    const year = clampNumber(lastAttendedYear - startYear + 1, 1, 4);
+    return `${ordinal(year)} Year High School`;
+}
+
+function getCollegeLevelReached(startYear, lastAttendedYear) {
+    if (!startYear || !lastAttendedYear || lastAttendedYear < startYear) return null;
+    const year = clampNumber(lastAttendedYear - startYear + 1, 1, 4);
+    return `${ordinal(year)} Year College`;
+}
 
 // Select a school whose establishment year makes it possible for a person
 // with a given graduation year to have attended it. Returns null if none.
@@ -148,7 +189,8 @@ function generateSingleProfile() {
 
     // Elementary must be completed before secondary; secondary must be completed before tertiary
     // reduce completion probability so "Not Finished" occurs more often
-    let elementaryCompleted = age >= 12 && Math.random() > 0.6;
+    const elementaryEligible = age >= MIN_ELEMENTARY_START_AGE;
+    let elementaryCompleted = elementaryEligible && age >= 12 && Math.random() > 0.6;
     let secondaryCompleted = false;
 
     // Choose schools only from those established early enough for the person's timeline
@@ -194,6 +236,7 @@ function generateSingleProfile() {
 
     let collegeStatusText = "";
     let collegeLastAttended = null;
+    const showCollege = secondaryCompleted && Math.random() < COLLEGE_APPEARANCE_CHANCE;
 
     // compute plausible attendance windows
     const elemStartYear = dobYear + 6; // typical school starting age 6
@@ -203,15 +246,11 @@ function generateSingleProfile() {
     const collegeStartYear = hsEndYear; // college starts same year HS ends
     const collegeEndYear = collegeGradYear;
 
-    const elemStatusText = age < 12
-        ? "In Progress"
-        : elementaryCompleted
-            ? `Completed (${elemGradYear})`
-            : "Not Finished";
-
     // last attended years for incomplete/partial attendance
     let elemLastAttended = null;
-    if (elemStatusText === "In Progress") {
+    if (!elementaryEligible) {
+        elemLastAttended = null;
+    } else if (age < 12) {
         elemLastAttended = Math.min(BASE_YEAR, dobYear + age);
     } else if (!elementaryCompleted) {
         const maxYear = Math.min(elemEndYear, BASE_YEAR);
@@ -221,18 +260,17 @@ function generateSingleProfile() {
         elemLastAttended = elemEndYear;
     }
 
-    const hsStatusText = !elementaryCompleted
-        ? "Not Started"
-        : (age < 18
-            ? "In Progress"
-            : (secondaryCompleted
-                ? `Completed (${hsGradYear})`
-                : "Not Finished"));
+    const elemLevelReached = getElementaryLevelReached(elemStartYear, elemLastAttended);
+    const elemStatusText = !elementaryEligible
+        ? "Not Yet Started"
+        : elementaryCompleted
+            ? `Completed (${elemGradYear})`
+            : formatStatusWithLevel(age < 12 ? "In Progress" : "Not Finished", elemLevelReached);
 
     let hsLastAttended = null;
     if (!elementaryCompleted) {
         hsLastAttended = null;
-    } else if (hsStatusText === "In Progress") {
+    } else if (age < 18) {
         hsLastAttended = Math.min(BASE_YEAR, dobYear + age);
     } else if (!secondaryCompleted) {
         const maxYear = Math.min(hsEndYear, BASE_YEAR);
@@ -242,7 +280,14 @@ function generateSingleProfile() {
         hsLastAttended = hsEndYear;
     }
 
-    if (secondaryCompleted) {
+    const hsLevelReached = getSecondaryLevelReached(hsStartYear, hsLastAttended, isK12);
+    const hsStatusText = !elementaryCompleted
+        ? "Not Started"
+        : secondaryCompleted
+            ? `Completed (${hsGradYear})`
+            : formatStatusWithLevel(age < 18 ? "In Progress" : "Not Finished", hsLevelReached);
+
+    if (showCollege) {
         // attempt to pick a college that was already established by the time the person could attend
         collegeSchool = selectEligibleSchool(tertiarySchools, collegeGradYear);
         if (!collegeSchool) {
@@ -252,23 +297,32 @@ function generateSingleProfile() {
         } else {
             if (age <= 30) {
                 if (currentlyInSchool === "Yes") {
-                    collegeStatusText = `Undergraduate (Currently attending 3rd Year)`;
+                    collegeStatusText = "Undergraduate";
                     // last attended should be between college start and current year
                     const maxCA = Math.min(BASE_YEAR, collegeEndYear);
                     const minCA = Math.max(collegeStartYear, collegeStartYear);
                     if (minCA <= maxCA) collegeLastAttended = randomInt(minCA, maxCA);
                 } else if (age < (isK12 ? 22 : 20)) {
-                    collegeStatusText = `Undergraduate (Level Reached: 2nd Year)`;
+                    collegeStatusText = "Undergraduate";
                     const maxCA = Math.min(BASE_YEAR, collegeEndYear);
                     const minCA = Math.max(collegeStartYear, collegeStartYear);
                     if (minCA <= maxCA) collegeLastAttended = randomInt(minCA, maxCA);
                 } else {
                     collegeStatusText = `Graduated (${collegeGradYear})`;
+                    collegeLastAttended = collegeEndYear;
                 }
+            } else {
+                collegeStatusText = `Graduated (${collegeGradYear})`;
+                collegeLastAttended = collegeEndYear;
             }
         }
     } else {
         collegeStatusText = "Not Applicable";
+    }
+
+    if (collegeSchool && collegeStatusText === "Undergraduate") {
+        const collegeLevelReached = getCollegeLevelReached(collegeStartYear, collegeLastAttended);
+        collegeStatusText = formatStatusWithLevel(collegeStatusText, collegeLevelReached);
     }
 
     // do not coerce missing schools into objects here — keep null so returned
@@ -286,7 +340,7 @@ function generateSingleProfile() {
         <span style="font-size:13px;">${hsTypeText}</span>
         <span class="school-info">Est. ${hsSchool.est} | Status: ${hsStatusText}</span>
     ` : '';
-    const collegeHTML = (age > 35 || !collegeSchool) ? "" : `
+    const collegeHTML = !collegeSchool ? "" : `
         ${collegeSchool.name} <br>
         <span style="font-size:13px;">Course: ${course}</span>
         <span class="school-info">Est. ${collegeSchool.est} | Status: ${collegeStatusText}${collegeLastAttended ? ` | Last Attended: ${collegeLastAttended}` : ''}</span>
@@ -328,7 +382,7 @@ function generateSingleProfile() {
                 strand: strand,
                 lastAttended: hsLastAttended
             } : null,
-            tertiary: (age > 30 || !secondaryCompleted || !collegeSchool) ? null : {
+            tertiary: (!showCollege || !collegeSchool) ? null : {
                 school: collegeSchool.name,
                 est: collegeSchool.est,
                 course: course,
