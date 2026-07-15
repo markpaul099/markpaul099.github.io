@@ -493,6 +493,12 @@ async function generateAndDisplay() {
     }
 }
 
+window.addEventListener('keydown', function(event) {
+    if (event.key.toLowerCase() === 'g') {
+      document.getElementById('generateAndDisplay').click();
+    }
+  });
+
 // Auto-generate first profile on load (ensure datasets are loaded first)
 window.onload = async () => {
     await datasetsReady;
