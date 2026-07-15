@@ -11,6 +11,16 @@
 <div class="container">
     <h1>NSRP Jobseeker Data Generator</h1>
 
+    <div class="education-picker">
+        <div class="education-picker-label">Optional education target</div>
+        <div class="radio-group">
+            <label><input type="radio" name="education-target" value="elementary"> Elementary completed</label>
+            <label><input type="radio" name="education-target" value="highSchool"> High school completed</label>
+            <label><input type="radio" name="education-target" value="college"> College completed</label>
+            <button type="button" class="clear-selection-btn" onclick="clearEducationTarget()">Clear selection</button>
+        </div>
+    </div>
+
     <button onclick="generateAndDisplay()">Generate Random Legitimate Profile</button>
 
     <div class="section">

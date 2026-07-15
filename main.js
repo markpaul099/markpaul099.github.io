@@ -15,8 +15,25 @@ const municipality = "Apalit";
 const province = "Pampanga";
 
 // Education Datasets (Local institutions only)
-const courses = ["BS Computer Science", "BS Information Technology", "BS Business Administration", "BS Accountancy", "BA Communication", "BS Education"];
-const strands = ["STEM", "ABM", "HUMSS", "TVL - ICT", "GAS"];
+const courses = [
+  "BS Computer Science", 
+  "BS Information Technology", 
+  "BS Business Administration", 
+  "BS Accountancy", 
+  "BA Communication", 
+  "BS Education",
+  "BS Nursing",
+  "BS Civil Engineering",
+  "BS Psychology",
+  "BS Hospitality Management",
+  "BS Criminology",
+  "BS Medical Technology",
+  "BS Tourism Management",
+  "BS Architecture",
+  "BS Mechanical Engineering",
+  "BA Political Science"
+];
+const strands = ["STEM", "ABM", "HUMSS", "TVL - ICT", "TVL - Home Economics", "TVL - Industrial Arts", "GAS"];
 
 const elementarySchools = [
     { name: "Sulipan Elementary School", est: 1945 },
@@ -138,11 +155,23 @@ function selectEligibleSchool(schools, latestAllowedYear) {
     return randomItem(eligible);
 }
 
+function getSelectedEducationTarget() {
+    const selected = document.querySelector('input[name="education-target"]:checked');
+    return selected ? selected.value : null;
+}
+
+function clearEducationTarget() {
+    const radioButtons = document.querySelectorAll('input[name="education-target"]');
+    radioButtons.forEach(radio => {
+        radio.checked = false;
+    });
+}
+
 /**
  * CORE SINGLE PROFILE GENERATION
  * Returns a single profile object with all fields
  */
-function generateSingleProfile() {
+function generateSingleProfile(educationTarget = null) {
     const isMale = Math.random() > 0.5;
     const fName = isMale ? randomItem(maleNames) : randomItem(femaleNames);
     const lName = randomItem(lastNames);
@@ -151,7 +180,8 @@ function generateSingleProfile() {
     const suffix = isMale ? randomItem(suffixes) : "";
 
     // ===== TEMPORAL LOGIC: Base Year 2026 =====
-    const age = randomInt(18, 50);
+    const minAge = educationTarget === 'college' ? 22 : 18;
+    const age = randomInt(minAge, 50);
     const dobYear = BASE_YEAR - age;
     const dobMonth = randomInt(1, 12);
     const dobDay = randomInt(1, 28);
@@ -189,6 +219,19 @@ function generateSingleProfile() {
     let elementaryCompleted = elementaryEligible && age >= 12 && Math.random() > 0.6;
     let secondaryCompleted = elementaryCompleted && age >= 18 && Math.random() > 0.5;
 
+    if (educationTarget === 'elementary') {
+        elementaryCompleted = true;
+        secondaryCompleted = false;
+    } else if (educationTarget === 'highSchool') {
+        elementaryCompleted = true;
+        secondaryCompleted = true;
+    } else if (educationTarget === 'college') {
+        elementaryCompleted = true;
+        secondaryCompleted = true;
+    }
+
+    
+
     // We'll no longer pick specific school names. Instead generate realistic
     // education statuses, strands and courses based on age and K-12 timing.
     const course = randomItem(courses);
@@ -208,7 +251,12 @@ function generateSingleProfile() {
 
     let collegeStatusText = "";
     let collegeLastAttended = null;
-    const showCollege = secondaryCompleted && Math.random() < COLLEGE_APPEARANCE_CHANCE;
+    let showCollege = secondaryCompleted && Math.random() < COLLEGE_APPEARANCE_CHANCE;
+    if (educationTarget === 'college') {
+        showCollege = true;
+    } else if (educationTarget) {
+        showCollege = false;
+    }
 
     // compute plausible attendance windows
     const elemStartYear = dobYear + 6; // typical school starting age 6
@@ -282,6 +330,11 @@ function generateSingleProfile() {
         }
     } else {
         collegeStatusText = "Not Applicable";
+    }
+
+    if (educationTarget === 'college') {
+        collegeStatusText = `Graduated (${collegeGradYear})`;
+        collegeLastAttended = collegeEndYear;
     }
 
     if (collegeStatusText === "Undergraduate") {
@@ -433,7 +486,7 @@ function displayProfile(profile) {
 async function generateAndDisplay() {
     try {
         await datasetsReady;
-        const profile = generateSingleProfile();
+        const profile = generateSingleProfile(getSelectedEducationTarget());
         displayProfile(profile);
     } catch (err) {
         console.error('generateAndDisplay error', err);
@@ -443,6 +496,6 @@ async function generateAndDisplay() {
 // Auto-generate first profile on load (ensure datasets are loaded first)
 window.onload = async () => {
     await datasetsReady;
-    const profile = generateSingleProfile();
+    const profile = generateSingleProfile(getSelectedEducationTarget());
     displayProfile(profile);
 };
